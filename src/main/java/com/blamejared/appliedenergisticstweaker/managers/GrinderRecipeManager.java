@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import com.blamejared.crafttweaker.api.CraftTweakerAPI;
 import com.blamejared.crafttweaker.api.annotations.ZenRegister;
 import com.blamejared.crafttweaker.api.item.IIngredient;
+import com.blamejared.crafttweaker.api.item.IIngredientWithAmount;
 import com.blamejared.crafttweaker.api.item.IItemStack;
 import com.blamejared.crafttweaker.api.managers.IRecipeManager;
 import com.blamejared.crafttweaker.impl.actions.recipes.ActionAddRecipe;
@@ -26,26 +27,15 @@ import appeng.recipes.handlers.GrinderRecipe;
 public class GrinderRecipeManager implements IRecipeManager {
     
     @ZenCodeType.Method
-    public void addRecipe(String name, IItemStack output, IItemStack ingredient, int turns,
-                          MCWeightedItemStack... optionalOutputs) {
+    public void addRecipe(String name, IItemStack output, IIngredientWithAmount ingredient, int turns, MCWeightedItemStack... optionalOutputs) {
         
         name = fixRecipeName(name);
-        GrinderRecipe recipe = makeRecipe(name, output, ingredient, ingredient.getAmount(), turns, optionalOutputs);
+        GrinderRecipe recipe = makeRecipe(name, output, ingredient, turns, optionalOutputs);
         CraftTweakerAPI.apply(new ActionAddRecipe(this, recipe, InscriberProcessType.INSCRIBE
                 .name()));
     }
     
-    @ZenCodeType.Method
-    public void addRecipe(String name, IItemStack output, IIngredient ingredient, int ingredientCount, int turns,
-                          MCWeightedItemStack... optionalOutputs) {
-        
-        name = fixRecipeName(name);
-        GrinderRecipe recipe = makeRecipe(name, output, ingredient, ingredientCount, turns, optionalOutputs);
-        CraftTweakerAPI.apply(new ActionAddRecipe(this, recipe, InscriberProcessType.INSCRIBE
-                .name()));
-    }
-    
-    private GrinderRecipe makeRecipe(String name, IItemStack output, IIngredient ingredient, int ingredientCount,
+    private GrinderRecipe makeRecipe(String name, IItemStack output, IIngredientWithAmount ingredient,
                                      int turns, MCWeightedItemStack... optionalOutputs) {
         
         ResourceLocation resourceLocation = new ResourceLocation("crafttweaker", name);
@@ -55,8 +45,9 @@ public class GrinderRecipeManager implements IRecipeManager {
                         mcWeightedItemStack.getItemStack().getInternal()))
                 .collect(
                         Collectors.toList());
-        return new GrinderRecipe(resourceLocation, "", ingredient.asVanillaIngredient(),
-                ingredientCount,
+        return new GrinderRecipe(resourceLocation, "", ingredient.getIngredient()
+                .asVanillaIngredient(),
+                ingredient.getAmount(),
                 output.getInternal(), turns, optionalResults);
     }
     
