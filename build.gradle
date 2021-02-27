@@ -1,0 +1,218 @@
+buildscript {
+    repositories {
+        maven {
+            url = 'https://files.minecraftforge.net/maven'
+        }
+        maven {
+            url = 'https://dist.creeper.host/Sponge/maven'
+        }
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
+        classpath "gradle.plugin.com.matthewprenger:CurseGradle:1.4.0"
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'eclipse'
+apply plugin: 'maven-publish'
+apply plugin: "com.matthewprenger.cursegradle"
+apply from: 'https://raw.githubusercontent.com/MinecraftModDevelopment/Gradle-Collection/22e7d543a18cd30675277fbfa3669e3d9e206010/generic/secrets.gradle'
+
+import groovy.json.JsonOutput
+
+if (project.hasProperty('secretFile')) {
+    //noinspection GroovyAssignabilityCheck
+    loadSecrets(new File((String) findProperty('secretFile')))
+}
+
+version = '1.0.0'
+if (System.getenv('BUILD_NUMBER') != null) {
+    version += "." + System.getenv('BUILD_NUMBER')
+}
+group = 'com.blamejared.appliedenergisticstweaker'
+archivesBaseName = 'AppliedEnergisticsTweaker'
+
+sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
+
+println('Java: ' + System.getProperty('java.version') + ' JVM: ' + System.getProperty('java.vm.version') + '(' + System.getProperty('java.vendor') + ') Arch: ' + System.getProperty('os.arch'))
+minecraft {
+    mappings channel: 'snapshot', version: '20201028-1.16.3'
+    runs {
+        client {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            mods {
+                examplemod {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            mods {
+                examplemod {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        data {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            args '--mod', 'examplemod', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+
+            mods {
+                examplemod {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+    maven { url 'https://maven.blamejared.com' }
+    maven { url 'https://modmaven.dev' }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.16.5-36.0.43'
+
+    compile fg.deobf("com.blamejared.crafttweaker:CraftTweaker-1.16.5:7.1.0.134")
+    compile fg.deobf("appeng:appliedenergistics2:8.2.0")
+    compile fg.deobf("mezz.jei:jei-1.16.4:7.6.0.53")
+}
+
+jar {
+    manifest {
+        attributes([
+                "Specification-Title"     : "AppliedEnergisticsTweaker",
+                "Specification-Vendor"    : "Jaredlll08",
+                "Specification-Version"   : "1", // We are version 1 of ourselves
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : "${version}",
+                "Implementation-Vendor"   : "Jaredlll08",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
+
+jar.finalizedBy('reobfJar')
+publishing {
+
+    publications {
+
+        mavenJava(MavenPublication) {
+
+            groupId project.group
+            artifactId project.archivesBaseName
+            version project.version
+            from components.java
+
+            // Allows the maven pom file to be modified.
+            pom.withXml {
+
+                // Go through all the dependencies.
+                asNode().dependencies.dependency.each { dep ->
+
+                    println 'Surpressing artifact ' + dep.artifactId.last().value().last() + ' from maven dependencies.'
+                    assert dep.parent().remove(dep)
+                }
+            }
+        }
+    }
+
+    repositories {
+
+        maven {
+
+            url "file://" + System.getenv("local_maven")
+        }
+    }
+
+}
+
+curseforge {
+
+    apiKey = findProperty('curseforge_api_token') ?: 0
+    project {
+        id = "451538"
+        releaseType = 'release'
+        changelog = file("changelog.md")
+        changelogType = 'markdown'
+    }
+}
+
+task updateVersionTracker {
+
+    onlyIf {
+
+        project.hasProperty('versionTrackerAPI')
+    }
+
+    doLast {
+        def body = [
+                'author'        : "${project.findProperty('versionTrackerAuthor')}",
+                'projectName'   : "AppliedEnergisticsTweaker",
+                'gameVersion'   : "1.16.5",
+                'projectVersion': "${version}",
+                'homepage'      : "${project.findProperty('versionTrackerHomepage')}",
+                'uid'           : "${project.findProperty('versionTrackerKey')}"
+        ]
+
+        // Opens a connection to the version tracker API and writes the payload JSON.
+        def req = new URL(project.findProperty('versionTrackerAPI')).openConnection()
+        req.setRequestMethod('POST')
+        req.setRequestProperty('Content-Type', 'application/json; charset=UTF-8')
+        req.setRequestProperty('User-Agent', "AppliedEnergisticsTweaker Tracker Gradle")
+        req.setDoOutput(true)
+        req.getOutputStream().write(JsonOutput.toJson(body).getBytes("UTF-8"))
+
+        // We need to attempt a read in order to actually send the message.
+        println "VersionCheck Status code: ${req.getResponseCode()}"
+        println "VersionCheck Response: ${req.getInputStream().getText()}"
+    }
+
+}
+
+
+task genGitChangelog() {
+    def stdout = new ByteArrayOutputStream()
+    // first commit to check from, in our case the first commit of the branch
+    String firstCommit = "00b8533b085761ba4d3409bed1d84630d03f996e";
+    String repoLink = "https://github.com/jaredlll08/AppliedEnergisticsTweaker/commit/"
+    // was having issues with grep and spaces in the regex
+    exec {
+        commandLine 'git', 'log', '-i', '--grep=version\\spush', '--grep=open\\sbeta\\sspecific\\scode', '--pretty=tformat:%H', '--date=local', firstCommit + '..@{0}'
+        standardOutput = stdout
+    }
+    if (stdout.toString().trim().indexOf("\n") >= 0) {
+        firstCommit = stdout.toString().split("\n")[0].trim();
+    }
+    System.out.println("Last version hash: \"" + firstCommit + "\"");
+    stdout = new ByteArrayOutputStream()
+    def test = exec {
+        commandLine 'git', 'log', '--pretty=tformat:- [%s](' + repoLink + '%H) - %aN - %cd', '--max-parents=1', '--date=local', firstCommit + "..@"
+        standardOutput = stdout
+    }
+    File file = new File("changelog.md")
+    file.write("### Current version: " + project.version)
+    file.append("\n" + stdout.toString())
+    System.out.println("Changelog generated!")
+}

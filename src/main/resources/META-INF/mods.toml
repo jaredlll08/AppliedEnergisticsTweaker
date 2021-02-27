@@ -1,0 +1,12 @@
+modLoader = "javafml"
+loaderVersion = "[36,)"
+license = "MIT"
+[[mods]]
+modId = "appliedenergisticstweaker"
+version = "${file.jarVersion}"
+displayName = "Applied Energistics Tweaker"
+updateJSONURL = "https://updates.blamejared.com/get?n=AppliedEnergisticsTweaker&gv=1.16.5"
+authors = "Jaredlll08"
+description = '''
+Adds CraftTweaker support to Applied Energistics 2.
+'''
