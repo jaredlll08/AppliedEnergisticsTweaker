@@ -161,6 +161,7 @@ curseforge {
                 requiredDependency 'crafttweaker'
                 requiredDependency 'applied-energistics-2'
             }
+        }
     }
 }
 
