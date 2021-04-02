@@ -31,8 +31,7 @@ public class GrinderRecipeManager implements IRecipeManager {
         
         name = fixRecipeName(name);
         GrinderRecipe recipe = makeRecipe(name, output, ingredient, turns, optionalOutputs);
-        CraftTweakerAPI.apply(new ActionAddRecipe(this, recipe, InscriberProcessType.INSCRIBE
-                .name()));
+        CraftTweakerAPI.apply(new ActionAddRecipe(this, recipe, ""));
     }
     
     private GrinderRecipe makeRecipe(String name, IItemStack output, IIngredientWithAmount ingredient,
