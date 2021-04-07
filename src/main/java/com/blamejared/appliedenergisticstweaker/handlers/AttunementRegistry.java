@@ -4,10 +4,11 @@ package com.blamejared.appliedenergisticstweaker.handlers;
 import appeng.api.config.TunnelType;
 import com.blamejared.appliedenergisticstweaker.actions.attunement.*;
 import com.blamejared.crafttweaker.api.CraftTweakerAPI;
+import com.blamejared.crafttweaker.api.annotations.ZenRegister;
 import com.blamejared.crafttweaker.api.item.IIngredient;
 import org.openzen.zencode.java.ZenCodeType;
 
-
+@ZenRegister
 @ZenCodeType.Name("mods.appliedenergistics2.Attunement")
 public class AttunementRegistry {
     

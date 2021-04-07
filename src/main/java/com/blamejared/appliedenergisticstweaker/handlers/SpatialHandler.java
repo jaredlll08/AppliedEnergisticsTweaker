@@ -2,9 +2,11 @@ package com.blamejared.appliedenergisticstweaker.handlers;
 
 import com.blamejared.appliedenergisticstweaker.actions.spatial.ActionWhitelistEntity;
 import com.blamejared.crafttweaker.api.CraftTweakerAPI;
+import com.blamejared.crafttweaker.api.annotations.ZenRegister;
 import net.minecraft.tileentity.TileEntity;
 import org.openzen.zencode.java.ZenCodeType;
 
+@ZenRegister
 @ZenCodeType.Name("mods.appliedenergistics2.Spatial")
 public class SpatialHandler {
     
